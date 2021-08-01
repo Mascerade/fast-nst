@@ -1,9 +1,9 @@
 import torch
 import torch.optim as optim
 import numpy as np
-from src.common import Common
-from src.training_functions import total_cost, load_training_batch
-from src.image_transformations import add_noise
+from nst.common import Common
+from nst.cost_functions import total_cost, load_training_batch
+from nst.image_transformations import add_noise
 
 # Create the optimizer
 opt = optim.Adam(Common.transformation_net.parameters(), lr=1e-3)

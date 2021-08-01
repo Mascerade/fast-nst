@@ -31,3 +31,47 @@ class FastNSTConfig(BaseNSTConfig):
 
         # The transformation network
         self.transformation_net = ImageTransformationNetwork()
+
+    def load_training_batch(self, current_batch: int, set_type: str):
+        """
+        Load different batches of data (essentially a custom data loader for training, validation, and testing)
+        """
+        # The initial position is where we want to start getting the batch
+        # So it is the starting index of the batch
+        initial_pos = current_batch * self.batch_size
+        
+        # List to store the images
+        images = []
+        
+        # Make sure the batch is within the [0, self.train_size)
+        if set_type == 'train':
+            if initial_pos + self.batch_size > self.train_size:
+                batch_size = self.train_size - initial_pos
+        
+        # Make sure the batch is within the [MAX_TRAIN, MAX_VAL)
+        elif set_type == 'val':
+            initial_pos = self.train_size + initial_pos
+            if initial_pos + self.batch_size > self.train_size + self.val_split:
+                batch_size = (self.train_size + self.val_split) - initial_pos
+        
+        # Make sure the batch is within the [MAX_VAL, TOTAL_DATA)
+        elif set_type == 'test':
+            initial_pos = (self.train_size + self.val_split) + initial_pos
+            if initial_pos + self.batch_size > self.total_data_size:
+                batch_size = self.total_data_size - initial_pos
+
+        for f in self.data[initial_pos:initial_pos + batch_size]:
+            # Resize the image to 256 x 256
+            image = np.asarray(Image.open(f).resize(self.img_dim))
+            
+            # If the image is grayscale, stack the image 3 times to get 3 channels
+            if image.shape == self.img_dim:
+                image = np.stack((image, image, image))
+                images.append(image)
+                continue
+                
+            # Transpose the image to have channels first
+            image = image.transpose(2, 0, 1)
+            images.append(image)
+        
+        return np.array(images)
