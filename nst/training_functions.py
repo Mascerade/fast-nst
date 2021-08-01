@@ -1,8 +1,8 @@
 import torch
 import numpy as np
 from PIL import Image
-from src.image_transformations import normalize_batch
-from src.common import Common
+from nst.image_transformations import normalize_batch
+from nst.common import Common
 
 def compute_gram(matrix):
     '''

@@ -2,8 +2,8 @@ import torch
 import numpy as np
 import glob
 from PIL import Image
-from src.models_architectures.transformation_network import ImageTransformationNetwork
-from src.models_architectures.forward_vgg import ForwardVGG19
+from nst.models_architectures.transformation_network import ImageTransformationNetwork
+from nst.models_architectures.forward_vgg import ForwardVGG19
 
 class Common():
     # Constants

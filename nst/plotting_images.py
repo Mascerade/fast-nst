@@ -2,8 +2,8 @@ import torch
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-from src.common import Common
-from src.training_functions import load_training_batch
+from nst.common import Common
+from nst.training_functions import load_training_batch
 
 def show_sample_images():
     _, axarr = plt.subplots(2,2)

@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from src.models_architectures.residual_block import ResidualBlock
+from nst.models_architectures.residual_block import ResidualBlock
 
 class ImageTransformationNetwork(nn.Module):
     def __init__(self):
