@@ -5,3 +5,5 @@ venv/
 data/*
 !data/.gitkeep
 debug.log
+GatysImplementation.ipynb
+Train.ipynb

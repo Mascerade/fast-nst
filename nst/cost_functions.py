@@ -15,12 +15,12 @@ def content_cost(config: BaseNSTConfig, input, target):
     input_norm = normalize_batch(input)
     target_norm = normalize_batch(target)
 
-    input_layers = config.forward_vgg(input_norm, False)
-    target_layers = config.forward_vgg(target_norm, False)
+    input_layers = config.forward_vgg(input_norm, config.content_layers.keys())
+    target_layers = config.forward_vgg(target_norm, config.content_layers.keys())
 
     accumulated_loss = 0
-    for layer in range(len(input_layers)):
-        accumulated_loss = accumulated_loss + torch.mean(torch.square(input_layers[layer] - target_layers[layer]))
+    for layer, weight in enumerate(config.content_layers.values()):
+        accumulated_loss = accumulated_loss + weight * torch.mean(torch.square(input_layers[layer] - target_layers[layer]))
     
     return accumulated_loss
 
@@ -29,16 +29,13 @@ def style_cost(config: BaseNSTConfig, input, target):
     input_norm = normalize_batch(input)
     target_norm = normalize_batch(target)
 
-    input_layers = config.forward_vgg(input_norm, True)
-    target_layers = config.forward_vgg(target_norm, True)
-    
-    # layer weights
-    layer_weights = [0.3, 0.7, 0.7, 0.3]
+    input_layers = config.forward_vgg(input_norm, config.style_layers.keys())
+    target_layers = config.forward_vgg(target_norm, config.style_layers.keys())
     
     # The accumulated losses for the style
     accumulated_loss = 0
-    for layer in range(len(input_layers)):
-        accumulated_loss = accumulated_loss + layer_weights[layer] * \
+    for layer, weight in enumerate(config.style_layers.values()):
+        accumulated_loss = accumulated_loss + weight * \
                             torch.mean(torch.square(compute_gram(input_layers[layer]) -
                                                     compute_gram(target_layers[layer])))
     
@@ -61,8 +58,8 @@ def total_cost(config: BaseNSTConfig, input, targets):
     content, style = targets
     
     # Get the content, style and tv variation losses
-    closs = content_cost(input, content) * REG_CONTENT
-    sloss = style_cost(input, style) * REG_STYLE
+    closs = content_cost(config, input, content) * REG_CONTENT
+    sloss = style_cost(config, input, style) * REG_STYLE
     tvloss = total_variation_cost(input) * REG_TV
         
     # Add it to the running list of losses

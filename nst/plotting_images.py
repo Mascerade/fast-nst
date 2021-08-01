@@ -4,7 +4,6 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from nst.configs.base_config import BaseNSTConfig
 from nst.configs.fastnst_config import FastNSTConfig
-from nst.common import Common
 
 def show_sample_images(config: FastNSTConfig):
     _, axarr = plt.subplots(2,2)
@@ -15,7 +14,7 @@ def show_sample_images(config: FastNSTConfig):
     axarr[1,0].imshow(np.asarray(Image.open(config.data[8]).resize(config.img_dim)))
     
     # Grayscale example
-    grayscale = np.asarray(Image.open(Common.data[13]).resize(Common.img_dim))
+    grayscale = np.asarray(Image.open(config.data[13]).resize(config.img_dim))
     grayscale = np.stack((grayscale, grayscale, grayscale)).transpose(1, 2, 0)
     axarr[1,1].imshow(grayscale)
     
@@ -39,6 +38,12 @@ def training_show_img(config: FastNSTConfig):
     
     # Show the image
     plt.imshow(gen_img)
+    plt.show()
+
+def plot_img(img):
+    img = img[0].transpose(1, 2, 0).astype('uint8')
+    plt.figure(figsize=(10, 5))
+    plt.imshow(img)
     plt.show()
 
 def show_img(config: FastNSTConfig, img):
