@@ -16,12 +16,18 @@ class BaseNSTConfig():
                  epochs: int,
                  batches: int,
                  lr: int,
-                 optimizer):
+                 optimizer,
+                 content_weight = 1.0,
+                 style_weight = 1e6,
+                 tv_weight = 1e-6):
         # Initialize variables
         self.img_dim = img_dim
         self.style_img_path = style_img_path
         self.content_layers = content_layers
         self.style_layers = style_layers
+        self.content_weight = content_weight
+        self.style_weight = style_weight
+        self.tv_weight = tv_weight
         self.epochs = epochs
         self.batches = batches
         self.lr = lr
@@ -95,18 +101,13 @@ class BaseNSTConfig():
         return tvloss
 
     def total_cost(self, input, targets):
-        # Weights
-        REG_TV = 1e-6
-        REG_STYLE = 1e6
-        REG_CONTENT = 1.0
-        
         # Extract content and style images
         content, style = targets
         
         # Get the content, style and tv variation losses
-        closs = self.content_cost(input, content) * REG_CONTENT
-        sloss = self.style_cost(input, style) * REG_STYLE
-        tvloss = self.total_variation_cost(input) * REG_TV
+        closs = self.content_cost(input, content) * self.content_weight
+        sloss = self.style_cost(input, style) * self.style_weight
+        tvloss = self.total_variation_cost(input) * self.tv_weight
             
         # Add it to the running list of losses
         self.content_losses.append(closs)

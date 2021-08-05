@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from typing import List, Dict
+from typing import List
 from PIL import Image
 from nst.configs.base_config import BaseNSTConfig
 from nst.plotting_images import plot_img
