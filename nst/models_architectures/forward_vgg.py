@@ -1,6 +1,4 @@
 import torch
-import torch.nn as nn
-import torchvision
 from torchvision.models import vgg19
 
 class ForwardVGG19(torch.nn.Module):
@@ -9,6 +7,8 @@ class ForwardVGG19(torch.nn.Module):
         vgg = vgg19(pretrained=True)
         vgg.eval()
         self.features = vgg.features
+        for param in self.features.parameters():
+            param.requires_grad = False
         
     def forward(self, x, layers):
         results = []

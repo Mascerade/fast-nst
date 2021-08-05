@@ -1,20 +1,17 @@
 import torch
 import numpy as np
-import glob
-from typing import Sequence, List, Dict
+from typing import List, Dict
 from PIL import Image
 from nst.configs.base_config import BaseNSTConfig
-from nst.models_architectures.transformation_network import ImageTransformationNetwork
-from nst.models_architectures.forward_vgg import ForwardVGG19
-from nst.cost_functions import total_cost
 from nst.plotting_images import plot_img
+from nst.image_transformations import normalize_batch
 
-class NSTConfig(BaseNSTConfig):
+class GatysNSTConfig(BaseNSTConfig):
     def __init__(self,
                  content_img_path: str,
                  *args,
                  **kwargs):
-        super(NSTConfig, self).__init__(*args, **kwargs)
+        super(GatysNSTConfig, self).__init__(*args, **kwargs)
 
         # Initialize variables
         self.content_img_path = content_img_path
@@ -22,7 +19,7 @@ class NSTConfig(BaseNSTConfig):
         # Note: The images are using 255 int
         self.content_img = np.asarray(Image.open(self.content_img_path).resize(self.img_dim)).transpose(2, 0, 1)[0:3]
         self.content_img = self.content_img.reshape(1, 3, *self.img_dim)
-        self.content_img_ten = torch.from_numpy(self.content_img).float()
+        self.content_img_ten = torch.from_numpy(np.copy(self.content_img)).float()
         self.target_img = torch.clone(self.content_img_ten)
         self.target_img.requires_grad = True
 
@@ -33,6 +30,17 @@ class NSTConfig(BaseNSTConfig):
         self.style_losses: List[float] = []
         self.tv_losses: List[float] = []
 
+        # Create precomputed style layers
+        style_vgg = normalize_batch(self.style_img_ten)
+        style_vgg = self.forward_vgg(style_vgg, self.style_layers.keys())
+        self.precomputed_style = []
+        for layer in style_vgg:
+            self.precomputed_style.append(self.compute_gram(layer))
+
+        # Create precomputed content layers
+        self.precomputed_content = normalize_batch(self.content_img_ten)
+        self.precomputed_content = self.forward_vgg(self.precomputed_content, self.content_layers.keys())
+        
     def train(self):
         for epoch in range(self.epochs):
             for batch in range(self.batches):
@@ -40,9 +48,8 @@ class NSTConfig(BaseNSTConfig):
                 self.opt.zero_grad()
 
                 # Compute loss
-                loss = total_cost(self,
-                                  self.target_img,
-                                  [self.content_img_ten, self.style_img_ten])
+                loss = self.total_cost(self.target_img,
+                                       [self.content_img_ten, self.style_img_ten])
 
                 # Backprop
                 loss.backward()
@@ -56,7 +63,7 @@ class NSTConfig(BaseNSTConfig):
                 # Every 20 batches, show the loss graphs and the image so far
                 if (batch % 20 == 19):
                     #plot_losses()
-                    plot_img(self.target_img.numpy())
+                    plot_img(self.target_img.detach().numpy())
 
                 print("Epoch: {} Training Batch: {}".format(epoch + 1, batch + 1), "Loss: {:f}".format(loss))
                 print('****************************')
