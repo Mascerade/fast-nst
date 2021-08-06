@@ -1,3 +1,4 @@
+from PIL import Image
 import numpy as np
 
 def normalize_batch(batch):
@@ -31,3 +32,9 @@ def add_noise(batch):
     ret = batch + np.random.normal(mean, std, batch.shape)
     ret = np.clip(batch, 0, 255)
     return ret
+
+def upsample(img, dim):
+    img = Image.fromarray(img[0].transpose(1, 2, 0).astype('uint8'))
+    img = np.asarray(img.resize(dim, resample=0))
+    img = img.transpose(2, 0, 1).reshape(1, 3, *dim)
+    return img

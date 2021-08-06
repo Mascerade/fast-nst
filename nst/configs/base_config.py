@@ -54,12 +54,12 @@ class BaseNSTConfig():
         return (1/(channels * height * width)) * (torch.matmul(matrix.view(batches, channels, -1),
                                                     torch.transpose(matrix.view(batches, channels, -1), 1, 2)))
 
-    def content_cost(self, input, target):
+    def content_cost(self, input, target, precomputed):
         # First normalize both the input and target (preprocess for VGG16)
         input_norm = normalize_batch(input)
         input_layers = self.forward_vgg(input_norm, self.content_layers.keys())
         
-        target_layers = self.precomputed_content
+        target_layers = precomputed
         if target_layers is None:
             target_norm = normalize_batch(target)
             target_layers = self.forward_vgg(target_norm, self.content_layers.keys())
@@ -70,12 +70,12 @@ class BaseNSTConfig():
         
         return accumulated_loss
 
-    def style_cost(self, input, target):
+    def style_cost(self, input, target, precomputed):
         # First normalize both the input and target (preprocess for VGG16)
         input_norm = normalize_batch(input)
         input_layers = self.forward_vgg(input_norm, self.style_layers.keys())
         
-        target_layers = self.precomputed_style
+        target_layers = precomputed
         if target_layers is None:
             target_norm = normalize_batch(target)
             target_vgg_layers = self.forward_vgg(target_norm, self.style_layers.keys())
@@ -102,11 +102,11 @@ class BaseNSTConfig():
 
     def total_cost(self, input, targets):
         # Extract content and style images
-        content, style = targets
+        content, style, precomputed = targets
         
         # Get the content, style and tv variation losses
-        closs = self.content_cost(input, content) * self.content_weight
-        sloss = self.style_cost(input, style) * self.style_weight
+        closs = self.content_cost(input, content, precomputed[0]) * self.content_weight
+        sloss = self.style_cost(input, style, precomputed[1]) * self.style_weight
         tvloss = self.total_variation_cost(input) * self.tv_weight
             
         # Add it to the running list of losses
