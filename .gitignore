@@ -3,6 +3,7 @@ __pycache__/
 .vscode/
 venv/
 data/*
+output/*
 !data/.gitkeep
 debug.log
 train.py

@@ -4,13 +4,14 @@ import numpy as np
 from typing import List, Tuple, Dict
 from PIL import Image
 from nst.configs.base_config import BaseNSTConfig
-from nst.plotting_images import plot_img
+from nst.plotting_images import plot_img, save_img
 from nst.image_transformations import normalize_batch, upsample
 
 
 class GatysNSTConfig(BaseNSTConfig):
     def __init__(
         self,
+        name: str,
         content_img_path: str,
         high_res: bool,
         img_dim: Tuple[int, int],
@@ -26,6 +27,7 @@ class GatysNSTConfig(BaseNSTConfig):
         tv_weight=1e-6,
     ):
         super().__init__(
+            name,
             img_dim,
             style_img_path,
             content_layers,
@@ -136,6 +138,7 @@ class GatysNSTConfig(BaseNSTConfig):
             self.train_low_res()
         opt = self.optimizer([self.target_img], self.lr)
         self.train_img(
+            self.name,
             opt,
             self.target_img,
             self.content_img_ten,
@@ -146,6 +149,7 @@ class GatysNSTConfig(BaseNSTConfig):
     def train_low_res(self):
         opt = self.optimizer([self.low_res_target_img], self.lr)
         self.train_img(
+            self.name + "_low_res",
             opt,
             self.low_res_target_img,
             self.low_res_content_img,
@@ -158,7 +162,9 @@ class GatysNSTConfig(BaseNSTConfig):
         self.target_img = torch.from_numpy(self.target_img)
         self.target_img.requires_grad = True
 
-    def train_img(self, opt, init_img, content_img, style_img, precomputed):
+    def train_img(
+        self, folder: str, opt, init_img, content_img, style_img, precomputed
+    ):
         for epoch in range(self.epochs):
             for batch in range(self.batches):
                 # Zero the gradients
@@ -179,7 +185,12 @@ class GatysNSTConfig(BaseNSTConfig):
                 # Every 20 batches, show the loss graphs and the image so far
                 if batch % 20 == 19:
                     # plot_losses()
-                    plot_img(init_img.detach().numpy())
+                    # plot_img(init_img.detach().numpy())
+                    save_img(
+                        init_img.detach().numpy(),
+                        folder,
+                        f"epoch_{epoch}_batch_{batch}",
+                    )
 
                 print(
                     "Epoch: {} Training Batch: {}".format(epoch + 1, batch + 1),

@@ -1,9 +1,25 @@
+import os
 import torch
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt  # type: ignore
 from nst.configs.base_config import BaseNSTConfig
 from nst.configs.fastnst_config import FastNSTConfig
+
+
+def save_img(img, folder: str, name: str):
+    """
+    Save an image
+    """
+    # The image was in a batch, so have to get the first element
+    img = img[0].transpose(1, 2, 0)
+    img = img.astype("uint8")
+    img = Image.fromarray(img)
+
+    # Create the folder if it doesn't already exist
+    if not os.path.isdir(f"output/{folder}/"):
+        os.mkdir(f"output/{folder}/")
+    img.save(f"output/{folder}/{name}.jpg")
 
 
 def show_sample_images(config: FastNSTConfig):

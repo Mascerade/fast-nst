@@ -2,6 +2,7 @@ from torch.optim import Adam
 from nst.configs.gatys_nst_config import GatysNSTConfig
 
 config = GatysNSTConfig(
+    name="elephant-example",
     content_img_path="data/elephant.jpg",
     high_res=True,
     img_dim=(1200, 1200),

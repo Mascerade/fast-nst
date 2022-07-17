@@ -10,6 +10,7 @@ from nst.models_architectures.forward_vgg import ForwardVGG19
 class BaseNSTConfig:
     def __init__(
         self,
+        name: str,
         img_dim: Tuple[int, int],
         style_img_path: str,
         content_layers: Dict[int, float],  # Key is the layer, value is the weight
@@ -23,6 +24,7 @@ class BaseNSTConfig:
         tv_weight=1e-6,
     ):
         # Initialize variables
+        self.name = name
         self.img_dim = img_dim
         self.style_img_path = style_img_path
         self.content_layers = content_layers
