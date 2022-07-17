@@ -1,5 +1,6 @@
 import torch
-from torchvision.models import vgg19
+from torchvision.models import vgg19  # type: ignore
+
 
 class ForwardVGG19(torch.nn.Module):
     def __init__(self):
@@ -9,7 +10,7 @@ class ForwardVGG19(torch.nn.Module):
         self.features = vgg.features
         for param in self.features.parameters():
             param.requires_grad = False
-        
+
     def forward(self, x, layers):
         results = []
         for i, model in enumerate(self.features):
@@ -17,5 +18,5 @@ class ForwardVGG19(torch.nn.Module):
 
             if i in layers:
                 results.append(x)
-                        
+
         return results

@@ -1,28 +1,54 @@
 import torch
 import math
 import numpy as np
-from typing import List
+from typing import List, Tuple, Dict
 from PIL import Image
 from nst.configs.base_config import BaseNSTConfig
 from nst.plotting_images import plot_img
 from nst.image_transformations import normalize_batch, upsample
 
+
 class GatysNSTConfig(BaseNSTConfig):
-    def __init__(self,
-                 content_img_path: str,
-                 high_res: bool,
-                 *args,
-                 **kwargs):
-        super(GatysNSTConfig, self).__init__(*args, **kwargs)
+    def __init__(
+        self,
+        content_img_path: str,
+        high_res: bool,
+        img_dim: Tuple[int, int],
+        style_img_path: str,
+        content_layers: Dict[int, float],
+        style_layers: Dict[int, float],
+        epochs: int,
+        batches: int,
+        lr: float,
+        optimizer,
+        content_weight=1.0,
+        style_weight=1e6,
+        tv_weight=1e-6,
+    ):
+        super().__init__(
+            img_dim,
+            style_img_path,
+            content_layers,
+            style_layers,
+            epochs,
+            batches,
+            lr,
+            optimizer,
+            content_weight,
+            style_weight,
+            tv_weight,
+        )
         self.target_low_res_img_pixels = 500 * 500
 
         # Initialize variables
         self.content_img_path = content_img_path
         self.high_res = high_res
-        
+
         # Note: The images are using 255 int
         # The transpose is used because PIL Image uses channels last while vgg uses channels first
-        self.content_img = np.asarray(Image.open(self.content_img_path).resize(self.img_dim)).transpose(2, 0, 1)
+        self.content_img = np.asarray(
+            Image.open(self.content_img_path).resize(self.img_dim)
+        ).transpose(2, 0, 1)
         self.content_img = self.content_img.reshape(1, 3, *self.img_dim)
         self.content_img_ten = torch.from_numpy(np.copy(self.content_img)).float()
         if not self.high_res:
@@ -30,23 +56,40 @@ class GatysNSTConfig(BaseNSTConfig):
             self.target_img.requires_grad = True
         else:
             # Calculate a constant to scale the image down
-            assert (self.img_dim[0] * self.img_dim[1] > self.target_low_res_img_pixels)
-            scale_constant = math.sqrt(self.target_low_res_img_pixels / (self.img_dim[0] * self.img_dim[1]))
+            assert self.img_dim[0] * self.img_dim[1] > self.target_low_res_img_pixels
+            scale_constant = math.sqrt(
+                self.target_low_res_img_pixels / (self.img_dim[0] * self.img_dim[1])
+            )
 
             # Generate the low resolution content image
-            self.low_res_img_dim = (int(self.img_dim[0] * scale_constant), int(self.img_dim[1] * scale_constant))
-            self.low_res_content_img = np.asarray(Image.open(self.content_img_path).resize(self.low_res_img_dim)).transpose(2, 0, 1)
-            self.low_res_content_img = self.low_res_content_img.reshape(1, 3, *self.low_res_img_dim)
-            self.low_res_content_img_ten = torch.from_numpy(np.copy(self.low_res_content_img)).float()
+            self.low_res_img_dim = (
+                int(self.img_dim[0] * scale_constant),
+                int(self.img_dim[1] * scale_constant),
+            )
+            self.low_res_content_img = np.asarray(
+                Image.open(self.content_img_path).resize(self.low_res_img_dim)
+            ).transpose(2, 0, 1)
+            self.low_res_content_img = self.low_res_content_img.reshape(
+                1, 3, *self.low_res_img_dim
+            )
+            self.low_res_content_img_ten = torch.from_numpy(
+                np.copy(self.low_res_content_img)
+            ).float()
 
             # Copy the low resolution content image for the initial target/input image
             self.low_res_target_img = torch.clone(self.low_res_content_img_ten)
             self.low_res_target_img.requires_grad = True
 
             # Create the low resolution style image
-            self.low_res_style_img = np.asarray(Image.open(self.style_img_path).resize(self.low_res_img_dim)).transpose(2, 0, 1)
-            self.low_res_style_img = self.low_res_style_img.reshape(1, 3, *self.low_res_img_dim)
-            self.low_res_style_img_ten = torch.from_numpy(np.copy(self.low_res_style_img)).float()
+            self.low_res_style_img = np.asarray(
+                Image.open(self.style_img_path).resize(self.low_res_img_dim)
+            ).transpose(2, 0, 1)
+            self.low_res_style_img = self.low_res_style_img.reshape(
+                1, 3, *self.low_res_img_dim
+            )
+            self.low_res_style_img_ten = torch.from_numpy(
+                np.copy(self.low_res_style_img)
+            ).float()
 
             # Create precomputed low res style layers
             style_vgg = normalize_batch(self.low_res_style_img_ten)
@@ -56,10 +99,17 @@ class GatysNSTConfig(BaseNSTConfig):
                 self.low_res_precomputed_style.append(self.compute_gram(layer))
 
             # Create precomputed low res content layers
-            self.low_res_precomputed_content = normalize_batch(self.low_res_content_img_ten)
-            self.low_res_precomputed_content = self.forward_vgg(self.low_res_precomputed_content, self.content_layers.keys())
+            self.low_res_precomputed_content = normalize_batch(
+                self.low_res_content_img_ten
+            )
+            self.low_res_precomputed_content = self.forward_vgg(
+                self.low_res_precomputed_content, self.content_layers.keys()
+            )
 
-            self.low_res_precomputed = [self.low_res_precomputed_content, self.low_res_precomputed_style]
+            self.low_res_precomputed = [
+                self.low_res_precomputed_content,
+                self.low_res_precomputed_style,
+            ]
 
         # For plotting the losses over time
         self.content_losses: List[float] = []
@@ -75,20 +125,36 @@ class GatysNSTConfig(BaseNSTConfig):
 
         # Create precomputed content layers
         self.precomputed_content = normalize_batch(self.content_img_ten)
-        self.precomputed_content = self.forward_vgg(self.precomputed_content, self.content_layers.keys())
+        self.precomputed_content = self.forward_vgg(
+            self.precomputed_content, self.content_layers.keys()
+        )
 
         self.precomputed = [self.precomputed_content, self.precomputed_style]
-    
+
     def train(self):
         if self.high_res:
             self.train_low_res()
         opt = self.optimizer([self.target_img], self.lr)
-        self.train_img(opt, self.target_img, self.content_img_ten, self.style_img_ten, self.precomputed)
+        self.train_img(
+            opt,
+            self.target_img,
+            self.content_img_ten,
+            self.style_img_ten,
+            self.precomputed,
+        )
 
     def train_low_res(self):
         opt = self.optimizer([self.low_res_target_img], self.lr)
-        self.train_img(opt, self.low_res_target_img, self.low_res_content_img, self.low_res_style_img, self.low_res_precomputed)
-        self.target_img = upsample(self.low_res_target_img.detach().numpy(), self.img_dim)
+        self.train_img(
+            opt,
+            self.low_res_target_img,
+            self.low_res_content_img,
+            self.low_res_style_img,
+            self.low_res_precomputed,
+        )
+        self.target_img = upsample(
+            self.low_res_target_img.detach().numpy(), self.img_dim
+        )
         self.target_img = torch.from_numpy(self.target_img)
         self.target_img.requires_grad = True
 
@@ -99,8 +165,7 @@ class GatysNSTConfig(BaseNSTConfig):
                 opt.zero_grad()
 
                 # Compute loss
-                loss = self.total_cost(init_img,
-                                       [content_img, style_img, precomputed])
+                loss = self.total_cost(init_img, [content_img, style_img, precomputed])
 
                 # Backprop
                 loss.backward()
@@ -112,9 +177,12 @@ class GatysNSTConfig(BaseNSTConfig):
                 init_img.data.clamp_(0, 255)
 
                 # Every 20 batches, show the loss graphs and the image so far
-                if (batch % 20 == 19):
-                    #plot_losses()
+                if batch % 20 == 19:
+                    # plot_losses()
                     plot_img(init_img.detach().numpy())
 
-                print("Epoch: {} Training Batch: {}".format(epoch + 1, batch + 1), "Loss: {:f}".format(loss))
-                print('****************************')
+                print(
+                    "Epoch: {} Training Batch: {}".format(epoch + 1, batch + 1),
+                    "Loss: {:f}".format(loss),
+                )
+                print("****************************")
