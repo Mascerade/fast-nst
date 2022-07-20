@@ -48,7 +48,7 @@ class FastNSTConfig(BaseNSTConfig):
         self.batch_size = batch_size
 
         # Create data
-        self.data: List[str] = list(glob.iglob(self.content_imgs_path))
+        self.data: List[str] = list(glob.iglob(f"{self.content_imgs_path}/*"))
         self.total_data_size: int = len(self.data)
         self.train_size: int = len(self.data) - val_split
 
@@ -72,6 +72,8 @@ class FastNSTConfig(BaseNSTConfig):
 
         # List to store the images
         images = []
+
+        batch_size = self.batch_size
 
         # Make sure the batch is within the [0, self.train_size)
         if set_type == "train":
@@ -107,8 +109,9 @@ class FastNSTConfig(BaseNSTConfig):
         return np.array(images)
 
     def train(self):
-        opt = self.optimizer([self.transformation_net.parameters()], self.lr)
-        for epoch in self.epochs:
+        print(len(self.data))
+        opt = self.optimizer(self.transformation_net.parameters(), self.lr)
+        for epoch in range(self.epochs):
             for batch, _ in enumerate(
                 range(0, len(self.data) - self.val_split, self.batch_size)
             ):
@@ -163,7 +166,7 @@ class FastNSTConfig(BaseNSTConfig):
                 range(len(self.data) - self.val_split, len(self.data), self.batch_size)
             ):
                 # Train batch has noise while the content batch is the actual image
-                val_batch = self.load_training_batch(batch, self.batch_size, "val")
+                val_batch = self.load_training_batch(batch, "val")
                 content_batch = np.copy(val_batch)
 
                 # Add noise to the training batch
