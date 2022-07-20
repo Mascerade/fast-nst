@@ -65,6 +65,9 @@ class BaseNSTConfig:
         )
 
     def content_cost(self, input, target, precomputed):
+        """
+        Computes the image's content cost
+        """
         # First normalize both the input and target (preprocess for VGG16)
         input_norm = normalize_batch(input)
         input_layers = self.forward_vgg(input_norm, self.content_layers.keys())
@@ -83,6 +86,9 @@ class BaseNSTConfig:
         return accumulated_loss
 
     def style_cost(self, input, target, precomputed):
+        """
+        Computes the image's style cost
+        """
         # First normalize both the input and target (preprocess for VGG16)
         input_norm = normalize_batch(input)
         input_layers = self.forward_vgg(input_norm, self.style_layers.keys())
@@ -107,6 +113,9 @@ class BaseNSTConfig:
         return accumulated_loss
 
     def total_variation_cost(self, input):
+        """
+        Computes the total variation cost
+        """
         norm = input / 255.0
         tvloss = torch.sum(
             torch.abs(norm[:, :, :, :-1] - norm[:, :, :, 1:])
@@ -114,6 +123,9 @@ class BaseNSTConfig:
         return tvloss
 
     def total_cost(self, input, targets):
+        """
+        Computes the overall cost of the image using style, content, and total variation
+        """
         # Extract content and style images
         content, style, precomputed = targets
 

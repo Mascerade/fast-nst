@@ -4,7 +4,7 @@ import numpy as np
 
 def normalize_batch(batch):
     """
-    Before we send an image into the VGG19, we have to normalize it
+    Before we send an image into the VGG19, we have to normalize it. Takes  a tensor
     """
     # Define the means and standard deviations
     vgg_means = [0.485, 0.456, 0.406]
@@ -26,7 +26,7 @@ def normalize_batch(batch):
 def add_noise(batch):
     """
     For the input image, we have to add noise so that the loss between the content image and
-    input image is not 0
+    input image is not 0. Takes a numpy array
     """
     mean = 0.0
     std = 10.0
